@@ -1,0 +1,70 @@
+---
+title: "Model for COPE study design"
+author: "Michelle.VanTieghem"
+date: "June 12, 2020"
+output:
+  html_document:
+    number_sections: no
+    df_print: kable
+    code_folding: show
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+      
+---
+
+
+# Instructions
+Load excel sheet with the following variables: \
+with baseline enrollment date (baseline_date) \
+child birth date/due date (child_birth_date, due dates will be future dates) \
+enrichment variable (here, enrichment = income brackets)
+
+
+```{r, echo = F, warning = F, include = F}
+library(tidyverse) # for data cleaning
+library(lubridate) # for date calculations
+set.seed(333) # for random sampling
+```
+
+```{r, echo = F}
+enrolled <- read.csv("data/enrolled_for_study_forecast.csv")
+head(enrolled)
+```
+
+check that your dates are real
+```{r}
+
+fix <- enrolled %>%
+  filter(as.Date(baseline_date) > Sys.Date())
+
+# decide what parameters are here.
+#fix_birth <- enrolled %>%
+ # filter(as.Date(child_birth_date))
+
+```
+
+process data 
+```{r}
+enrolled_clean <- enrolled %>%
+  # make sure you're only including valid data
+  filter(as.Date(baseline_date) <= Sys.Date()) %>%
+  # caldulate the month of enrollment...
+      mutate(baseline_date = as.Date(baseline_date), 
+             enrollment_month = as.factor(ifelse(baseline_date < "2020-04-01", "March",
+         ifelse(baseline_date < "2020-05-01", "April",
+                                      ifelse(baseline_date < '2020-06-01', "May", 
+                                             ifelse(baseline_date < '2020-07-01', "June",
+                                                    ifelse(baseline_date < "2020-08-01", "July", 
+                                                        ifelse(baseline_date < "2020-09-01", "August", 
+                                                               ifelse(baseline_date < "2020-10-01", "September", NA)))))))),
+         # if child's birth date is less than today, they are still pregnant.
+         status = as.factor(ifelse(as.Date(child_birth_date) > Sys.Date(), "Pregnant", "New Mom")),
+         child_birth_date = ymd(child_birth_date))
+
+summary(enrolled_clean$enrollment_month)
+summary(enrolled_clean$status)
+summary(enrolled_clean$enrichment_variable)
+```
+
