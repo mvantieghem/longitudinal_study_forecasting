@@ -14,8 +14,8 @@ Data provided by user, which sets variable inputs.
 Required columns: baseline_date, child_birth_date. \
 Optional columns: enrichment variables of interest 
 #### 2) Select inputs on side bar to modulate variables of the study design
-E.g. Filter the sample for particular enrichment variable of interest
-E.g. Choose specific age-target for study visit (e.g. six months of age)
+For example, filter the sample for particular enrichment variable of interest \
+OR choose a specific age-target for study visit (e.g. six months of age)
 #### 3) Look at the output to see how decisions in study design influence the projected study schedule.
 1) Summary table with total numbers of participants, by type of study visit. 
 2) Figures to visualize volume of study visits over time, by type of study visit 
