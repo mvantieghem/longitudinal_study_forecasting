@@ -1,6 +1,7 @@
 ## Longitudinal Study Forecasting Tool 
 
-This tool was developed to facilitate study design and operations for longitudinal devleopmental research.
+This tool was developed to facilitate study design and operations for longitudinal devleopmental research. \
+
 Author: Michelle VanTieghem
 
 ### Contents: 
