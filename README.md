@@ -9,6 +9,7 @@ app.R has code to run the interactive web application.
 
 ### Input of application:
 Data provided by user, which sets variable inputs.
+Default dataset provided from the COPE Study cohort of the Baby Bees Lab, NYU Langone.
 
 ### Instructions for users: 
 #### 1) Provide input csv file. 
