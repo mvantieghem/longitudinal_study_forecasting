@@ -1,6 +1,6 @@
 ## Longitudinal Study Forecasting Tool 
 
-This tool was developed to facilitate study design and operations for longitudinal devleopmental research. \
+Interactive tool for developmental researchers to improve longitudinal study design and implementation.
 
 Author: Michelle VanTieghem
 
@@ -13,7 +13,8 @@ Data provided by user, which sets variable inputs.
 ### Instructions for users: 
 #### 1) Provide input csv file. 
 Required columns: baseline_date, child_birth_date. \
-Optional columns: enrichment variables of interest 
+*For pregnancy cohorts, include child due date in the child birth date column* \
+Optional columns: enrichment variables of interest,as a factor (e.g. Income > 60K or < 60K)
 #### 2) Select inputs on side bar to modulate variables of the study design
 For example, filter the sample for particular enrichment variable of interest \
 OR choose a specific age-target for study visit (e.g. six months of age)
