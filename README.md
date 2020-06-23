@@ -1,7 +1,7 @@
 ## Longitudinal Study Forecasting Tool 
 
-Interactive tool for developmental researchers to improve longitudinal study design and implementation.
-shiny app: https://mvantieghem.shinyapps.io/longitudinal_study_forecasting/
+Interactive tool for developmental researchers to improve longitudinal study design and implementation. \
+shiny app: https://mvantieghem.shinyapps.io/longitudinal_study_forecasting/ \
 Author: Michelle VanTieghem
 
 ### Contents: 
