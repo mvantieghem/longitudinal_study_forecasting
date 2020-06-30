@@ -1,5 +1,5 @@
 ---
-title: "Model for COPE study design"
+title: "Prep data for longitudinal study forecasting app"
 author: "Michelle.VanTieghem"
 date: "June 12, 2020"
 output:
@@ -22,15 +22,15 @@ prep BEES Lab COPE data files for input into shiny app.
 library(tidyverse)
 library(lubridate) # for date calculations
 # for age function
-source("../scripts/custom_functions.R")
+source("custom_functions.R")
 set.seed(333) # for random sampling
 ```
 
 ```{r, echo = F}
 # note: inputs are not RAW data. 
 # inputs are merged / cleaned data.
-load("../../cope_data_dashboard/clean_data/baseline_deidentified_df.Rdata")
-load("../../cope_data_dashboard/clean_data/new_mom_df_clean.Rdata")
+load("../../clean_data/baseline_deidentified_df.Rdata")
+load("../../clean_data/new_mom_df_clean.Rdata")
 ```
 
 
@@ -65,7 +65,7 @@ mom_data_all2 <- mom_data_all %>%
   select(record_id, baseline_date, child_birth_date,  status, median_income)
 ```
 
-# find those who we know from follow up gave birth already,  so they aren't counted twice - and remove them from the pregnant list
+ find those who we know from follow up gave birth already,  so they aren't counted twice - and remove them from the pregnant list
 ```{r}
 preg2 <- preg %>%
   filter(!record_id %in% mom_data_all2$record_id) 
