@@ -29,26 +29,20 @@ set.seed(333) # for random sampling
 ```{r, echo = F}
 # note: inputs are not RAW data. 
 # inputs are merged / cleaned data.
-load("../../clean_data/baseline_deidentified_df.Rdata")
-load("../../clean_data/new_mom_df_clean.Rdata")
+baseline_clean <- read.csv("../../cope_data_dashboard/clean_data/cleaned_baseline_survey_2020-07-14.csv")
+preg_clean <-  read.csv("../../cope_data_dashboard/clean_data/cleaned_preg_survey_2020-07-14.csv")
+newmom_clean <- read.csv("../../cope_data_dashboard/clean_data/cleaned_new_mom_survey_2020-07-14.csv")
 ```
 
 
 ## 1. pregnant women
-```{r}
-# women pregnant at baseline
-preg <- baseline_clean2 %>%
- filter(covid_19_survey_all_complete == 2) %>%
-  filter(currently_pregnant == 1) %>%
-   # calculate child age (negative) - projected based on due date.
-  mutate(child_birth_date = ymd(pregnant_due_date),
-                  baseline_date = ymd(baseline_date)) %>%
-  select(record_id, baseline_date, child_birth_date, status, median_income) 
 
-# STILL NEED TO ADD THIS
-# manually fix year of due date that are implausible.
-#fixed_dates <- as.Date("2020-08-11")
-#reg$child_birth_date[due_dates$record_id %in% fix$record_id] <- fixed_dates
+```{r}
+preg_clean <- preg_clean %>% 
+  mutate(child_birth_date = ymd(pregnant_due_date), 
+         survey_date = ymd(today_date)) %>%
+  select(record_id, survey_date, child_birth_date)
+
 ```
 
 
@@ -56,29 +50,49 @@ preg <- baseline_clean2 %>%
 ## 2. new moms
 ```{r}
 # new mom, some of which includes women pregnant at baseline
-mom_data_all2 <- mom_data_all %>%
-  filter(covid19_survey_for_new_mothers_complete == 2 & 
-          !is.na(child_birth_date)) %>%
+newmom_clean <- newmom_clean %>%
+  filter( !is.na(child_birth_date)) %>%
   # calculate child age in months, based on TODAY's date.
   mutate(child_birth_date = ymd(child_birth_date), 
-         baseline_date = ymd(baseline_date)) %>%
-  select(record_id, baseline_date, child_birth_date,  status, median_income)
+         survey_date = ymd(new_mom_survey_date)) %>%
+  select(record_id, survey_date, child_birth_date)
 ```
 
- find those who we know from follow up gave birth already,  so they aren't counted twice - and remove them from the pregnant list
+ find those who we know from follow up gave birth already, 
+ so they aren't counted twice - and remove them from the pregnant list
 ```{r}
-preg2 <- preg %>%
-  filter(!record_id %in% mom_data_all2$record_id) 
+preg2 <- preg_clean %>%
+  filter(!record_id %in% newmom_clean$record_id) 
 
-summary(as.factor(mom_data_all$median_income))
+nrow(preg_clean) - nrow(preg2)
+```
+
+## 3. get demographic variables 
+```{r}
+demo <- baseline_clean %>%
+  mutate(enrollment_date = ymd(baseline_date)) %>%
+  select(record_id, enrollment_date, median_income, white, hispanic)
+
+head(demo)
 ```
 
 
-## 3. combine and save for shiny app input.
+## 4 combine and save for shiny app input.
 ```{r}
-enrolled <- rbind(mom_data_all2, preg2) %>%
-  rename(enrichment_variable = median_income)%>%
-  select(baseline_date, child_birth_date, enrichment_variable)  %>%
-  rename(enrollment_date = baseline_date)
-write.csv(enrolled, "../data/enrolled_for_study_forecast.csv", row.names = F)
+mom_surveys <- rbind(newmom_clean, preg2)
+
+enrolled <- demo %>%
+  left_join(., mom_surveys, by = "record_id", all = T) %>%
+  # reformat these variables
+  mutate(demo_variable2 = ifelse(white == 1, "White", "Other"), 
+         demo_variable3 = ifelse(hispanic == 1, "Hispanic", "Not Hispanic")) %>%
+  rename(demo_variable1 = median_income) %>%
+  select(-white, -hispanic)
+
+head(enrolled)
+```
+
+## check data
+```{r}
+write.csv(enrolled, "../data/test_enrolled_for_study_forecast.csv", row.names = F)
 ```

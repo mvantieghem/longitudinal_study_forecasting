@@ -37,17 +37,21 @@ ui <- fluidPage(
                 placeholder = "No file selected", 
                 buttonLabel = "Browse..."), 
       checkboxGroupInput(inputId='enrollment_choice', 
-                         label = "Month of Enrollment",
+                         label = "Month of Survey Enrollment",
                          choices = c("April", "May", "June", "July"), 
                          selected =c("April", "May", "June", "July")),
       checkboxGroupInput(inputId = 'status_choice',
-                         label = "Current Maternal Status",
+                         label = "Maternal Status",
                          choices = c("Pregnant", "New Mom"),
                          selected = c("Pregnant", "New Mom")),
-      checkboxGroupInput(inputId = 'enrichment_choice', 
-                         label = "Enrichment Variable",
-                        choices = c("< 60K", "> 60K")),
-                        # selected = c("< 60K", "> 60K")),
+      checkboxGroupInput(inputId = 'demo1_choice', 
+                         label = "Demographic Variable 1",
+                         choices = c("< 60K", "> 60K"),
+                         selected = c("< 60K", "> 60K")),
+      checkboxGroupInput(inputId = 'demo2_choice', 
+                         label = "Demographic Variable 2",
+                         choices = c("White", "Other"),
+                         selected = c("White", "Other")),
       sliderInput(inputId = "N_participant_choice",
                   label = "Proportion of selected cohort to do infant testing:",
                   min = 0, max = 1, value = 0.5),
@@ -56,12 +60,12 @@ ui <- fluidPage(
                          choices = visit_list,
                          selected = visit_list),
       dateInput(inputId ='start_date', 
-                label = 'Study Start Date',
+                label = 'Start Date of Infant Visits',
                 value = '2020-08-01', format = 'mm/dd/yyyy'),
       sliderInput(inputId = 'num_weeks_choice', 
-                  label = 'Study Duration (in weeks)',
+                  label = 'Duration of Schedule Displayed (in weeks)',
                   min = 3, max = 200, 
-                  value =  80)
+                  value =  10)
     ),
     # Main panel for displaying outputs ----
     mainPanel(
@@ -80,15 +84,17 @@ ui <- fluidPage(
                            h4('Instructions for users'), 
                            h5('1) Provide input csv file.'),
                              p('Required columns: enrollment_date, child_birth_date.'),
-                              HTML('<p><i>For pregnancy cohorts, include child due date in the child birth date column.</i>'),
-                             p('Optional columns: enrichment variable of interest, as a factor (e.g. Income >60K vs. <60K)'),
+                             
+                              HTML('<p><i> Note: all dates must be provided in yyyy-mm-dd format! </i>'),
+                           HTML('<p><i>For pregnancy cohorts, child due date goes in the child birth date column.</i>'),
+                             p('Optional columns: demographic variable of interest, as a factor (e.g. Income >60K vs. <60K)'),
                            h5('2) Select inputs on side bar to modulate variables of the study design'),
-                              p('For example, filter the sample for a particular enrichment variable of interest.'),
-                             p('OR choose a sepcific age-target for study visits (e.g. six months of age'),
+                              p('For example, choose a specific age-target for study visits (e.g. six months of age)'),
+                           p('And choose a specific subset of data based on demographic variable (e.g. < 60K)'),
                            h5('3) Look at the output to see how decisions in study design influence the projected schedule.'),
                             p('1. Summary table with total numbers of participants, by type of study visit'),
                             p('2. Figures to visualize volume of study visits over time, by type of study visit.'),
-                              p('3. Dynamic table sto view & filter weekly schedules for planning study operations.')),
+                              p('3. Dynamic tables to view & filter weekly schedules for planning study operations.')),
                tabPanel("Summary", tableOutput(outputId = "summary_table"),
                         tableOutput(outputId= "totals_table")),
                   tabPanel("Figures", plotOutput(outputId = "plot_visits")), 
@@ -110,18 +116,20 @@ server_function <- function(input, output, session) {
   load_data <- reactive({
     if (is.null(input$file1)) {
       # if there is no input, use our template data.
-      read.csv("data/enrolled_for_study_forecast.csv")
+      read.csv("data/test_enrolled_for_study_forecast.csv")
+      #read.csv("data/test_data.csv")
     } else{ 
       read.csv(input$file1$datapath)
     }
   })
   ## FUNCTION FOR CLEANING DATA -------------------------
   clean_data <- reactive({
-    my_data <- load_data() %>%
+      my_data <- load_data() %>%
+     # my_data <- read.csv("data/enrolled_for_study_forecast.csv") %>%
       # make sure you're only including valid data
-      filter(as.Date(enrollment_date) <= Sys.Date()) %>%
+      filter(ymd(enrollment_date) <= Sys.Date()) %>%
       # caldulate the month of enrollment...
-      mutate(enrollment_date = as.Date(enrollment_date), 
+      mutate(enrollment_date = ymd(enrollment_date), 
              enrollment_month = as.factor(ifelse(enrollment_date < "2020-04-01", "March",
                                                  ifelse(enrollment_date < "2020-05-01", "April",
                                                         ifelse(enrollment_date < '2020-06-01', "May", 
@@ -129,20 +137,21 @@ server_function <- function(input, output, session) {
                                                                       ifelse(enrollment_date < "2020-08-01", "July", 
                                                                              ifelse(enrollment_date < "2020-09-01", "August", 
                                                                                     ifelse(enrollment_date < "2020-10-01", "September", NA)))))))),
-             # if child's birth date is less than today, they are still pregnant.
-             status = as.factor(ifelse(as.Date(child_birth_date) > Sys.Date(), "Pregnant", "New Mom")),
-             child_birth_date = ymd(child_birth_date))
+             # if child's birth date is less than today, they are still pregnant.,
+             child_birth_date = ymd(child_birth_date),
+             status = as.factor(ifelse(child_birth_date > Sys.Date(), "Pregnant", "New Mom")))
     
     #PROCESS DATA BASED ON INPUT SELECTIONS
     my_data_subset <- my_data %>%
       # Note: this is where I'd need to change things for selecting different visits 
-      mutate(newborn_visit =child_birth_date,
+      mutate(newborn_visit = child_birth_date,
              six_mo_visit =  child_birth_date + months(6),
              twelve_mo_visit =  child_birth_date + years(1)) %>% 
       # filter based on enrollment dates chosen and pregnant vs. new mom.
       filter(enrollment_month %in% input$enrollment_choice & 
                status %in% input$status_choice & 
-               enrichment_variable %in% input$enrichment_choice)
+               demo_variable1 %in% input$demo1_choice & 
+               demo_variable2 %in% input$demo2_choice)
     
     return(my_data_subset)
  
@@ -158,8 +167,15 @@ server_function <- function(input, output, session) {
         
         observe({
           updateCheckboxGroupInput(
-            session, inputId = "enrichment_choice",
-            choices = levels(clean_data()$enrichment_variable)
+            session, inputId = "demo1_choice",
+            choices = levels(clean_data()$demo_variable1)
+          )
+        })
+        
+        observe({
+          updateCheckboxGroupInput(
+            session, inputId = "demo2_choice", 
+            choices = levels(clean_data()$demo_variable2)
           )
         })
 })    
@@ -187,8 +203,8 @@ server_function <- function(input, output, session) {
     # set up an empty schedule dataframe, based on duration chosen
     schedule_by_week <- data.frame(Week_Number = 1:200) %>%
       # calculate date intervals for each week 
-      mutate(week_start = ymd(input$start_date) + weeks(1:200),
-             week_end = ymd(input$start_date) + weeks(1:200) + days (7),
+      mutate(week_start = ymd(input$start_date) + weeks(0:199),
+             week_end = ymd(input$start_date) + weeks(0:199) + days (7),
              week_interval = interval(week_start, week_end),
              # set variables to fill in 
              newborn = NA, 
