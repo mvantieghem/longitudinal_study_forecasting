@@ -27,8 +27,6 @@ set.seed(333) # for random sampling
 ```
 
 ```{r, echo = F}
-# note: inputs are not RAW data. 
-# inputs are merged / cleaned data.
 baseline_clean <- read.csv("../../cope_data_dashboard/clean_data/cleaned_baseline_survey_2020-07-14.csv")
 preg_clean <-  read.csv("../../cope_data_dashboard/clean_data/cleaned_preg_survey_2020-07-14.csv")
 newmom_clean <- read.csv("../../cope_data_dashboard/clean_data/cleaned_new_mom_survey_2020-07-14.csv")
@@ -76,23 +74,50 @@ demo <- baseline_clean %>%
 head(demo)
 ```
 
-
 ## 4 combine and save for shiny app input.
+specific to our cohort: demo1 = enrollment month,
+demo2 = race, demo 3 = median income
 ```{r}
 mom_surveys <- rbind(newmom_clean, preg2)
 
 enrolled <- demo %>%
   left_join(., mom_surveys, by = "record_id", all = T) %>%
+  filter(!is.na(child_birth_date)) %>%
   # reformat these variables
-  mutate(demo_variable2 = ifelse(white == 1, "White", "Other"), 
-         demo_variable3 = ifelse(hispanic == 1, "Hispanic", "Not Hispanic")) %>%
-  rename(demo_variable1 = median_income) %>%
-  select(-white, -hispanic)
+  mutate(enrollment_date = ymd(enrollment_date), 
+          demo_variable1 = as.factor(ifelse(enrollment_date < "2020-04-01", "March",
+                                   ifelse(enrollment_date < "2020-05-01", "April",
+                                   ifelse(enrollment_date < '2020-06-01', "May", 
+                                  ifelse(enrollment_date < '2020-07-01', "June",
+                                  ifelse(enrollment_date < "2020-08-01", "July", 
+                                  ifelse(enrollment_date < "2020-09-01", "August",                                             ifelse(enrollment_date < "2020-10-01", "September",
+                                      NA)))))))),
+           demo_variable2 = ifelse(white == 1, "White", "Other")) %>%
+  rename(demo_variable3 = median_income) %>%
+  mutate(subject_id = 1:nrow(.)) %>%
+  select(subject_id, survey_date, child_birth_date, demo_variable1, demo_variable2,  demo_variable3)
 
 head(enrolled)
 ```
 
 ## check data
 ```{r}
-write.csv(enrolled, "../data/test_enrolled_for_study_forecast.csv", row.names = F)
+write.csv(enrolled, file = "../data/enrolled_for_study_forecast.csv", row.names = F)
+```
+
+## make template (empty) data 
+```{r}
+empty_df <- enrolled %>%
+  filter(survey_date < '2020-04-01')
+
+write.csv(empty_df, file = "../template_data.csv", row.names = F)
+```
+
+## make fake data
+```{r}
+test_df <- enrolled %>%
+  mutate(demo_variable1 = ifelse(demo_variable1 == "April", "First wave",  "Second wave"),
+            demo_variable2 = ifelse(demo_variable2 == "White", "Green", "Red"))
+
+write.csv(test_df, file = "../data/test_data.csv", row.names = F)
 ```
