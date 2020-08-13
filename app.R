@@ -1,6 +1,6 @@
 # Shiny app for forcasting timing & volume of study visits.
 # Author: Michelle VanTieghem
-# Date: June 15, 2020
+# Date: Aug 11, 2020
 
 # set up environment and data ------------------------------------------------
 
@@ -13,293 +13,397 @@ library(DT) # needed for interactive data tables!
 
 set.seed(333) # for random sampling
 
-source("scripts/custom_functions.R") # custom functions
+#source("scripts/custom_functions.R") # custom functions
 
 # set customizations
 template_data <- read.csv("template_data.csv")
-demo_data <- read.csv("data/test_enrolled_for_study_forecast.csv")
+demo_data <- read.csv("data/enrolled_for_study_forecast.csv")
 demo1_levels <- levels(demo_data$demo_variable1)
 demo2_levels <- levels(demo_data$demo_variable2)
 demo3_levels <- levels(demo_data$demo_variable3)
-visit_list <- c("newborn", "3 months", "6 months", "9 months", "12 months")
+visit_list <- c("Visit1", "Visit2", "Visit3", "Visit4")
+default_visit_ages = c(2, 26, 52, 78)
 schedule_min <- 1
-schedule_max <- 100
-
+schedule_max <- 52
 
 
 # USER INTERFACE -----------------------------------------------------
-
-# Define UI for app that draws a histogram ----
 ui <- fluidPage(
-  # App title ----
-  titlePanel("Longitudinal Study Forecasting Tool"),
-  # Sidebar layout with input and output definitions ----
-  sidebarLayout(
-    # Sidebar panel for inputs ----
-    sidebarPanel(
-      fileInput(inputId = "file1",
+    titlePanel("Longitudinal Study Forecasting Tool"), 
+
+    sidebarLayout( # Sidebar panel for inputs ----
+      sidebarPanel(
+        h4("Cohort Selection"),
+        fileInput(inputId = "file1",
                 label = "Upload your data (csv file)",
                 multiple = FALSE, 
                 accept = c("text/csv", "test/comma-separated-values", "text/plain", ".csv"), 
                 placeholder = "No file selected", 
                 buttonLabel = "Browse..."), 
-      checkboxGroupInput(inputId = 'status_choice',
-                         label = "Maternal Status",
+        checkboxGroupInput(inputId = 'status_choice',
+                         label = "Current Maternal Status (estimated from child due date)",
                          choices = c("Pregnant", "New Mom"),
                          selected = c("Pregnant", "New Mom")),
-      checkboxGroupInput(inputId='demo1_choice', 
+        checkboxGroupInput(inputId='demo1_choice', 
                          label = "Demographic Variable 1",
                          choices = demo1_levels, 
                          selected = demo1_levels),
-      checkboxGroupInput(inputId = 'demo2_choice', 
-                         label = "Demographic Variable 2",
-                         choices = demo2_levels,
-                         selected = demo2_levels),
-      checkboxGroupInput(inputId = 'demo3_choice', 
-                         label = "Demographic Variable 3",
-                         choices = demo3_levels,
-                         selected = demo3_levels),
-      sliderInput(inputId = "N_participant_choice",
+        checkboxGroupInput(inputId = 'demo2_choice', 
+                       label = "Demographic Variable 2",
+                       choices = demo2_levels,
+                       selected = demo2_levels),
+        sliderInput(inputId = "N_participant_choice",
                   label = "Proportion of selected cohort to do infant testing:",
                   min = 0, max = 1, value = 1),
-      checkboxGroupInput(inputId = 'visit_choice', 
-                         label = 'Visit Type (Target Age)', 
-                         choices = visit_list,
-                         selected = visit_list),
-      dateInput(inputId ='start_date', 
-                label = 'Start Date of Infant Visits',
-                value = '2020-08-01', format = 'mm/dd/yyyy'),
-      sliderInput(inputId = 'num_weeks_choice', 
-                  label = 'Duration of Schedule Displayed (in weeks)',
-                  min = schedule_min, max = schedule_max, 
-                  value =  4)
-    ),
-    # Main panel for displaying outputs ----
-    mainPanel(
+        
+         numericInput(inputId = "number_visits",
+                                 label = "Number of visits",
+                                 value = 3, min = 1, max = 4),
+         numericInput(inputId = "Visit1_age",
+                               label = "age of Vist1 (weeks)",
+                               value = default_visit_ages[1], min = 0, max = 1000),
+          numericInput(inputId = "Visit2_age",
+                               label = "age of Visit2 (weeks)",
+                               value = default_visit_ages[2], min = 0, max = 1000),
+          numericInput(inputId = "Visit3_age",
+                               label = "age of Visit3 (weeks)",
+                               value =default_visit_ages[3], min = 0, max = 1000),
+        numericInput(inputId = "Visit4_age", 
+                     label = "age of Visit 4 (weeks)",
+                     value = default_visit_ages[4], min = 0, max = 1000)
+        ),
+
+  # Main panel for displaying outputs ----
+   mainPanel(
       # To make panel with tabs
       tabsetPanel(type = "tabs",
-                  tabPanel("About", 
-                           br(),
-                           h4('Interactive tool for developmental researchers'),
-                           h5(' To improve longitudinal study design and implementation'), 
-                             p(""),
-                             p("Author: Michelle VanTieghem"), 
-                             HTML("<p> For code, see the <a href = 'https://www.github.com/mvantieghem/longitudinal_study_forecasting/'> Github repository</a>"),
-                           br(), 
-                            p("___________________________________________"), 
+                  tabPanel("Instructions", 
+                        fluidRow(
                            br(),
                            h4('Getting Started'), 
                            h5('1) Download template csv file:'), 
                            downloadButton(outputId = 'downloadTemplate', "Download"),
                            h5('2) Enter your cohort data into the template csv file.'),
-                              HTML('<p><i> Note: all dates must be provided in yyyy-mm-dd format! </i>'),
-                              HTML('<p><i>For pregnancy cohorts, child due date goes in the child birth date column.</i>'),
-                             p('Optional columns: demographic variables of interest, as a factor (e.g. Income >60K vs. <60K)'),
+                           HTML('<p><i> Note: all dates must be provided in yyyy-mm-dd format! </i>'),
+                           HTML('<p><i>For pregnancy cohorts, child due date goes in the child birth date column.</i>'),
+                           p('Optional columns: demographic variables of interest, as a factor (e.g. Income >60K vs. <60K)'),
                            h5('3) Upload your data (csv file).'), 
-                           br(), 
-                           p("___________________________________________"), 
-                           br(),
-                           
+                           p("___________________________________________")), 
+                        fluidRow(
                            h4('Using the App'), 
-                           h5('1)  Select inputs on side bar to modulate variables of the study design'),
-                              p('For example, choose a specific age-target for study visits (e.g. six months of age)'),
-                               p('And choose a specific subset of data based on demographic variable (e.g. < 60K)'),
-                           h5('2) Look at the output:'),
-                            p('1. Summary table with total numbers of participants, by type of study visit'),
-                            p('2. Figures to visualize volume of study visits over time, by type of study visit.'),
-                              p('3. Dynamic tables to view & filter weekly schedules for planning study operations.')),
-                  tabPanel("Summary", tableOutput(outputId = "summary_table"),
-                           tableOutput(outputId= "totals_table")),
-                  tabPanel("Figures", plotOutput(outputId = "plot_visits")), 
-                  tabPanel("Tables", dataTableOutput(outputId = "visit_table"),
-                           downloadButton(outputId = 'downloadData', "Download"))
-                  
+                           h5('1) Cohort Selection'),
+                           p('Select the features of the cohort to be modeled on the left-hand panel,
+                           e.g. pregnant women only, or low income women'),
+                           p('Then, select the number of visits for your study, and the target ages of visits.'),
+                           h5('2) Study Overview'),
+                           p('Get a summary table with total numbers of participants, by type of study visit & visualize the volume of study visits over time for the selected cohort.'),
+                           h5('3) Visit Schedules' ),
+                           p ('Select the visit type, start date, duration of schedules to be displayed.'),
+                           p('Interactively view weekly schedules in different formats, and download the schedule.')),
+                        fluidRow(
+                          HTML("<h5> For questions, contact the author: <a href= 'https://mvantieghem.github.io/'> Michelle VanTieghem</a>"),
+                          HTML("<h5> For code, see the <a href = 'https://www.github.com/mvantieghem/longitudinal_study_forecasting/'> Github repository</a>"))),
+                  tabPanel("Study Overview",
+                           fluidRow(
+                             column(3, h4("Total Participants:")), 
+                             column(3, verbatimTextOutput(outputId = 'total_N'))),
+                           h4("Total visits"),
+                           tableOutput(outputId = "visit_totals"),
+                           h4("N by demographic variables"),
+                            tableOutput(outputId = "demo_totals"),
+                            h4("Visualize volume of study visits over time"),
+                              plotOutput(outputId = "plot_weekly_visits")), 
+                  tabPanel("Visit Schedules", 
+                           fluidRow(
+                             br(),
+                             h3("Select visit type and schedule"),
+                             br()),
+                           fluidRow(
+                             column(6, selectInput(inputId = "select_schedule", 
+                                                 label = "Schedule format",
+                                                choices = list("Weekly Visit Totals" = 1,
+                                                               "Participant-specific" = 2),
+                                                selected = 1)),
+                             column(6, dateInput(inputId ='start_date', 
+                                                 label = 'Start Date',
+                                                 value =  Sys.Date(), 
+                                                 format = 'mm/dd/yyyy'))),
+                            fluidRow( 
+                              column(6, checkboxGroupInput(inputId = 'visit_choice', 
+                                                 label = 'Visits to be displayed', 
+                                                 choices = visit_list,
+                                                 selected = visit_list)),
+                               column(6,  sliderInput(inputId = 'num_weeks_choice', 
+                                       label = 'Duration of schedule (weeks)',
+                                       min = schedule_min,
+                                       max = schedule_max, 
+                                       value =  4))),
+                           fluidRow(
+                             dataTableOutput(outputId = "visit_schedule"),
+                              h4("Download schedule"), 
+                              downloadButton(outputId = 'download_visit_sched', "Download"))
+                         )
+                   )
       )
     )
-  )
 )
+    
+
+
 
 
 # SERVER FUNCTION ---------------------------------------------------------
-
 server_function <- function(input, output, session) {
+
+  # DOWNLOADING THE TEMPLATE CSV------------
+  output$downloadTemplate <-  downloadHandler(
+    filename = function() {
+      paste('template_data.csv', sep='')
+    }, 
+    content = function(file){
+      write.csv(template_data, file, row.names = F)
+    })
   
-     my_data <- read.csv("data/test_enrolled_for_study_forecast.csv") %>%
-     # my_data <- load_data() %>%
-             # if child's birth date is less than today, they are still pregnant.,
-              mutate(child_birth_date = ymd(child_birth_date),
-             status = as.factor(ifelse(child_birth_date > Sys.Date(), "Pregnant", "New Mom")))
-    
-    #  PROCESS DATA BASED ON INPUT SELECTIONS
-    clean_data <- my_data %>%
-      # Note: this is where I'd need to change things for selecting different visits 
-      mutate(newborn_visit = child_birth_date,
-             three_mo_visit = child_birth_date + months(3),
-             six_mo_visit =  child_birth_date + months(6),
-             nine_mo_visit = child_birth_date + months(9),
-             twelve_mo_visit =  child_birth_date + years(1))  # %>% 
-      # filter based on enrollment dates chosen and pregnant vs. new mom.
-     # filter(status %in% input$status_choice & 
-      #         demo_variable1 %in% input$demo1_choice & 
-       #        demo_variable2 %in% input$demo2_choice  & 
-        #       demo_variable3 %in% input$demo3_choice)
+  # SET UP EMPTY SCHEDULES  ------------------
+   schedule_by_week <-  reactive({
+      schedule_by_week <- data.frame(week_number = schedule_min:schedule_max) %>%
+      mutate(week_start = ymd(input$start_date) + weeks(0:(schedule_max-1)),
+             week_end = week_start + days (6),
+             week_interval = interval(week_start, week_end))
+    return(schedule_by_week)
+  })
+  
+   # UPLOAD USER DATA ---------------------------
+   load_data <- reactive({
+     if (is.null(input$file1)) {
+       # if there is no input, use our template data.
+       read.csv("data/enrolled_for_study_forecast.csv")
+       #read.csv("data/test_data.csv")
+     } else{ 
+       read.csv(input$file1$datapath)
+     }
+   })
+   
+   # update inputs based on uploaded data.
+   observe({
+       new_levels1 <- levels(load_data()$demo_variable1)
+       # Can use character(0) to remove all choices
+       if (is.null(new_levels1))
+         new_levels1 <- character(0)
+       
+       updateCheckboxGroupInput(
+         session, inputId = "demo1_choice", 
+         choices = new_levels1, selected = new_levels1)
+   })
      
-  
-  ## FUNCTION TO CALCULATE NUMBER OF PARTICIPANTS IN SAMPLE BASED ON INPUT -------------- 
-  #N_to_model <- reactive({
-    # require the data to be cleaned first
-   # req(clean_data)
-    # count how many subjects to model for follow-up visits based on input 
-    N_to_model <- round(nrow(clean_data * input$N_participant_choice))
-  #  return(N_to_model)
-  #})
-  
-  ## FUNCTION TO CALCULATE VISIT SCHEDULE FOR SAMPLE BASED ON INPUT ---------------------- 
- # schedule <- reactive({
-    # require N to be calculated and data to be cleaned 
-  #  req(N_to_model)
-   # req(clean_data)
-    
-    # get random sample of subjects based on N 
-    sample <- clean_data %>%
-      # get random sample from enrolled sample
-      sample_n(N_to_model)
-    
-    # set up an empty schedule dataframe, based on duration chosen
-    schedule_by_week <- data.frame(Week_Number = schedule_min:schedule_max) %>%
-      # calculate date intervals for each week 
-      mutate(week_start = ymd(input$start_date) + weeks(schedule_min-1:schedule_max-1),
-             week_end = ymd(input$start_date) + weeks(schedule_min-1:schedule_max-1) + days (7),
-             week_interval = interval(week_start, week_end),
-             # set variables to fill in 
-             newborn = NA, 
-             six_month = NA, 
-             twelve_month = NA)
-    
-    # calculate weekly visit rate
-    # for each week, count # of visits per session and save in schedule
-    for (week in 1:nrow(schedule_by_week)){
-      get_interval = schedule_by_week$week_interval[week]
+    observe({
+       new_levels2 <- levels(load_data()$demo_variable2)
+       if (is.null(new_levels2))
+         new_levels2 <- character(0)
+       
+       updateCheckboxGroupInput(
+         session, inputId = "demo2_choice",
+         choices = new_levels2, selected = new_levels2)
+   })
+
+    # add an observe marker for number of visits. 
+    observe({
+      new_visit_ages = default_visit_ages
+      if (input$number_visits  == 1){
+        new_visit_list = c("Visit1")
+        new_visit_ages[2:4] <- NA
+      } else if (input$number_visits == 2){
+        new_visit_list = c("Visit1", "Visit2")
+        new_visit_ages[3:4] <- NA
+      } else if (input$number_visits == 3){
+        new_visit_list = c("Visit1", "Visit2", "Visit3")
+        new_visit_ages[4] <- NA
+      } else if(input$number_visits == 4){
+        new_visit_list = c("Visit1", "Visit2", "Visit3", "Visit4")
+      }
       
-      # INFANT VISITS with partial sample
-      schedule_by_week$newborn[week] = sum(sample$newborn_visit[!is.na(sample$newborn_visit)] %within% get_interval)
-      schedule_by_week$six_month[week] = sum(sample$six_mo_visit[!is.na(sample$six_mo_visit)] %within% get_interval)
-      schedule_by_week$twelve_month[week] = sum(sample$twelve_mo_visit[!is.na(sample$twelve_mo_visit)] %within% get_interval)
+      # update the visit choice for schedule displays
+      updateCheckboxGroupInput(
+        session, inputId = "visit_choice", 
+        choices = new_visit_list, selected = new_visit_list)
+      
+      # update the boxes for the visit ages 
+      # note: don't need to update visit 1 
+      # because impossible for Visit1 to be NA because min visit  # = 1
+      updateNumericInput(
+        session, inputId = "Visit2_age",
+        value = new_visit_ages[2])
+      updateNumericInput(
+        session, inputId = "Visit3_age",
+        value = new_visit_ages[3])
+      updateNumericInput(
+        session, inputId = "Visit4_age",
+        value = new_visit_ages[4])
+    })
+   
+  # FORMAT COHORT DATA ------------------------
+   sample_data <- reactive({
+      my_data <- load_data() %>%
+         mutate(child_birth_date = ymd(child_birth_date),
+             status = as.factor(ifelse(child_birth_date > Sys.Date(), "Pregnant", "New Mom")),
+              Visit1 = child_birth_date + weeks(input$Visit1_age),
+              Visit2 = child_birth_date + weeks(input$Visit2_age),
+              Visit3 =  child_birth_date + weeks(input$Visit3_age),
+              Visit4 = child_birth_date + weeks(input$Visit4_age))
+      
+      # filiter data based on whether demo variable exists or not. 
+      if (!is.na(my_data$demo_variable1) & !is.na(my_data$demo_variable2)){
+       clean_data <- my_data %>%
+            filter(demo_variable1 %in% input$demo1_choice & 
+                 demo_variable2 %in% input$demo2_choice &
+                 status %in% input$status_choice)
+      } else if (!is.na(my_data$demo_variable1) & is.na(my_data$demo_variable2)){
+        clean_data <- my_data %>%
+            filter(demo_variable1 %in% input$demo1_choice & 
+                 status %in% input$status_choice)
+      } else if (is.na(my_data$demo_variable1) & is.na(my_data$demo_variable2)){
+        clean_data <- my_data %>%
+            filter(status %in% input$status_choice)
+      } else if(is.na(my_data$demo_variable1) & !is.na(my_data$demo_variable2)){
+        clean_data <- my_data %>%
+          filter(status %in% input$status_choice &
+                   demo_variable2 %in% input$demo2_choice)
+      }
+
+    # get random sample of subjects based on N 
+    N_to_model <- round(nrow(clean_data) * input$N_participant_choice)
+    sample_data <- clean_data %>%
+       sample_n(N_to_model)
+    return(sample_data)
+  })
+  
+  # convert into long format with schedule   
+  long_data <- reactive ({
+    long_data <- sample_data() %>%
+      gather(key = visit, value = visit_date, -child_birth_date, -survey_date, -subject_id, 
+             -starts_with("demo"), -status) %>%
+      mutate(visit_number = as.numeric(ifelse(visit == "Visit1", 1,
+                                              ifelse(visit == "Visit2", 2,
+                                            ifelse(visit == "Visit3", 3, 
+                                               ifelse(visit == "Visit4", 4, NA))))),
+              week_number = NA, week_interval = NA, month_number = NA) %>%
+      filter(visit_number <= input$number_visits) # only keep the visits needed.
+
+    # get week and date range for each visit 
+    for (i in 1:nrow(long_data)){
+      get_date = long_data$visit_date[i]
+      if (sum(get_date %within%  schedule_by_week()$week_interval > 0)){
+        week_num_index <- which(get_date %within% schedule_by_week()$week_interval)
+        long_data$week_number[i]  <-  week_num_index
+        long_data$week_interval[i] <- as.character(schedule_by_week()$week_interval[week_num_index])
+      } else{
+        long_data$week_number[i]   <- NA
+        long_data$week_interval[i] <- NA
+      }
     }
-    # calculate total visits per week
-   # schedule_by_week <- schedule_by_week %>%
-    #  mutate(all_visits = newborn + six_month + twelve_month)
-    
-    # make a long version of data for plotting and tables
-    schedule <- schedule_by_week %>%
-      gather(key = "Visit_Type", value = "Number_of_Visits",
-             -week_start, -week_end, -week_interval,-Week_Number)
-    # how can i add a level here?
-    # return the processed data 
-  #  return(schedule)
-  #})
+    return(long_data)
+  })
   
-  ## FUNCTION FOR INTERACTIVE PLOT --------------------
-  output$plot_visits <- renderPlot({
-    # require that data schedule is available 
-   # req(schedule)
-   # plot
-    plot_visits <- schedule %>%
-      filter(Visit_Type %in% input$visit_choice & 
-               Week_Number <= input$num_weeks_choice) %>%
-      ggplot( aes(x = Week_Number, y = Number_of_Visits)) + 
-      facet_wrap(~Visit_Type, nrow = 4) + 
+  # calculate visit totals by week
+    weekly_sums  <- reactive({
+      weekly_sums <- long_data() %>%
+        filter(!is.na(week_number)) %>%
+        group_by(week_number, week_interval, visit) %>%
+        count() %>%
+        rename(number_of_visits  = n) 
+     return(weekly_sums)
+  })
+    
+  
+    # STUDY OVERVIEW - N totals -----------------------
+   output$total_N <- renderText({
+     nrow(sample_data())
+   })
+
+    # STUDY OVERVIEW - visit totals ------------------------
+    output$visit_totals <- renderTable({
+       long_data() %>%
+          filter(!is.na(week_number)) %>%
+          group_by(visit) %>%
+          count() %>%
+          rename(number_of_visits  = n) 
+    }, rownames = F)
+    
+    ## STUDY OVERVIEW - demo totals --------------------
+    output$demo_totals <- renderTable({
+        df <- sample_data() 
+        if (!is.na(df$demo_variable1) & !is.na(df$demo_variable2)){
+            subs_demo <- df %>%
+              group_by(status, demo_variable1, demo_variable2) %>%
+              summarize(n = n())
+        } else if(!is.na(df$demo_variable1) & is.na(df$demo_variable2)){
+          subs_demo <- df %>%
+            group_by(status, demo_variable1) %>%
+            summarize(n = n())
+        }  else if(is.na(df$demo_variable1) & is.na(!df$demo_variable2)){
+          subs_demo <- df %>%
+            group_by(status, demo_variable2) %>%
+            summarize(n = n())
+        } else if(is.na(df$demo_variable1) & is.na(df$demo_variable2)){
+          subs_demo <- df %>%
+            group_by(status) %>%
+            summarize(n = n())
+        }
+      subs_demo }, rownames = F)
+  
+  ## STUDY OVERVIEW - PLOT VISITS BY WEEK --------------------
+  output$plot_weekly_visits <- renderPlot({
+   weekly_sums() %>%
+      ggplot(aes(x = week_number, y = number_of_visits)) + 
+      facet_wrap(~visit, nrow = 4) +
       geom_line() + theme_bw() + ylab ("Number of Study Visits") + 
-      xlab ("Week of Study")
-    
-    # Display the plot with all of the choices incorporated
-    plot_visits
-    
+      xlab ("Week of Study") 
   })
-  # FUNCTION FOR INTERACTIVE VISIT TABLE ------------------------------
-  output$visit_table <- DT::renderDataTable({
-    # require that data schedule is available 
-    req(schedule)
-    # table
-  visit_table <- schedule %>%
-      filter(Visit_Type %in% input$visit_choice & 
-              Week_Number <= input$num_weeks_choice) %>%
-      mutate(week_start = as.character(week_start), 
-             week_end = as.character(week_end)) %>%
-    select(-week_interval)
-  visit_table
-  }, rownames = F)
   
+  # SCHEDULE CHOICES ------------------------------
+    weekly_sched <- reactive({
+      req(weekly_sums)
+      weekly_sched <- weekly_sums() %>%
+        filter(visit %in% input$visit_choice & 
+               week_number <= input$num_weeks_choice)
+       return(weekly_sched)
+    })
 
-# FUNCTION FOR INTERACTIVE SUMMARY TABLE ------------------------------
-output$summary_table <- renderTable({
-  # require that data schedule is available, and Number o participants
-  req(schedule)
-  req(N_to_model)
-  # filter based on inputs
-  visit_table <- schedule %>%
-    filter(Visit_Type %in% input$visit_choice & 
-             Week_Number <= input$num_weeks_choice) %>%
-    mutate(week_start = as.character(week_start), 
-           week_end = as.character(week_end))
-  # make table 
-  summary_by_visit <- visit_table %>%
-    group_by(Visit_Type) %>%
-    summarize(Number_of_Subjects = as.integer(N_to_model),
-              Subjects_per_Visit = sum(Number_of_Visits, na.rm = T)) %>%
-    select(Visit_Type, Subjects_per_Visit)
-  summary_by_visit
-
-})
-
-# FUNCTION FOR TOTALS TABLE
-output$totals_table <- renderTable({
-  # require that data schedule is available, and Number o participants
-  req(schedule)
-  req(N_to_model)
-  # fitler based on inputs 
-  visit_table <- schedule %>%
-    filter(Visit_Type %in% input$visit_choice & 
-             Week_Number <= input$num_weeks_choice) %>%
-    mutate(week_start = as.character(week_start), 
-           week_end = as.character(week_end))
-  # get totals.
-  summary_totals <- visit_table %>%
-    summarize(Total_Subjects = as.integer(N_to_model),
-              Total_Visits = sum(Number_of_Visits, na.rm = T))
+    participant_sched <- reactive({
+      req(long_data)
+      participant_sched <- long_data() %>%
+        filter(visit %in% input$visit_choice & 
+                 week_number <= input$num_weeks_choice) %>%
+        select(week_number, week_interval, visit_date, visit, subject_id)
+      return(participant_sched)
+    })
+    
+    which_schedule <- reactive({
+      if (input$select_schedule == 1){
+        weekly_sched()
+      } else{
+        participant_sched()
+      }
+    })
+    
+   # display interactive table
+   output$visit_schedule <- DT::renderDataTable({
+      which_schedule() }, rownames = F)
   
-  summary_totals
-})
+  # download button
+  output$download_visit_sched <-downloadHandler(
+    filename = function() {
+      paste('Weekly_schedule-', Sys.Date(), '.csv', sep='')
+    }, 
+    content = function(file){
+      write.csv(which_schedule(), file, row.names = F)
+    })
 
-## FUNCTION FOR DOWNLOADING THE TEMPLATE CSV------------
-output$downloadTemplate <-  downloadHandler(
-  filename = function() {
-    paste('template_data.csv', sep='')
-  }, 
-  content = function(file){
-    write.csv(template_data, file, row.names = F)
-  })
-
-## FUNCTION FOR DOWNLOADING THE VISIT TABLE ------
-output$downloadData <-downloadHandler(
-  filename = function() {
-    paste('data-', Sys.Date(), '.csv', sep='')
-  }, 
-  content = function(file){
-    # pull the reactive schedule, and export it.
-    visit_table <- schedule %>%
-      filter(Visit_Type %in% input$visit_choice & 
-               Week_Number <= input$num_weeks_choice) %>%
-      mutate(week_start = as.character(week_start), 
-             week_end = as.character(week_end)) %>%
-      select(-week_interval)
-    write.csv(visit_table, file, row.names = F)
-  })
-
-
+    
 }
-
+  
 
 # SHINY APP CALL --------------------------------------------------------------
 
 shinyApp(ui = ui, server = server_function)
+

@@ -117,7 +117,7 @@ write.csv(empty_df, file = "../template_data.csv", row.names = F)
 ```{r}
 test_df <- enrolled %>%
   mutate(demo_variable1 = ifelse(demo_variable1 == "April", "First wave",  "Second wave"),
-            demo_variable2 = ifelse(demo_variable2 == "White", "Green", "Red"))
+            demo_variable2 = ifelse(demo_variable2 == NA))
 
-write.csv(test_df, file = "../data/test_data.csv", row.names = F)
+write.csv(test_df, file = "../data/test_data2.csv", row.names = F)
 ```
