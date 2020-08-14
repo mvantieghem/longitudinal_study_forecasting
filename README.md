@@ -4,20 +4,25 @@ Interactive tool for developmental researchers to improve longitudinal study des
 shiny app: https://mvantieghem.shinyapps.io/longitudinal_study_forecasting/ \
 Author: Michelle VanTieghem
 
-### Contents: 
+
+
+### Getting started:
+#### 1) Download template csv file
+#### 2) Enter your cohort data into the template csv file.
+Note: all dates must be provided in yyyy-mm-dd format! \
+For pregnant women: child due date goes in the child birth date column. \
+Optional columns: demographic variables of interest, as a factor(e.g. Group 1, Group 2).
+#### 3) Upload your data (csv file).
+### Using the App
+#### 1) Cohort Selection
+Select the features of the cohort to be modeled on the left-hand panel , e.g. pregnant women only, or low income women.
+Then, select the number of visits for your study, and the target ages of visits.
+#### 2) Study Overview
+Get summary information on selected cohort and number of participants per visit.
+Visualize the volume of study visits over time.
+#### 3) Visit Schedules
+Select the visit type, start date, duration of schedules to be displayed.
+Interactively view weekly schedules in different formats, and download the schedule.
+
+### Code: 
 app.R has code to run the interactive web application. 
-
-### Instructions for users: 
-#### 1) Provide input csv file. 
-Required columns: baseline_date, child_birth_date. \
-*For pregnancy cohorts, include child due date in the child birth date column* \
-Optional columns: enrichment variables of interest,as a factor (e.g. Income > 60K or < 60K) \
-Default dataset provided from the COPE Study cohort of the Baby Bees Lab, NYU Langone.
-
-#### 2) Select inputs on side bar to modulate variables of the study design
-For example, filter the sample for particular enrichment variable of interest \
-OR choose a specific age-target for study visit (e.g. six months of age)
-#### 3) Look at the output to see how decisions in study design influence the projected study schedule.
-1) Summary table with total numbers of participants, by type of study visit. 
-2) Figures to visualize volume of study visits over time, by type of study visit 
-3) Dynamic tables to view & filter weekly schedules for planning study operations.
