@@ -9,9 +9,9 @@ Author: Michelle VanTieghem
 ### Getting started:
 #### 1) Download template csv file
 #### 2) Enter your cohort data into the template csv file.
-**Note: all dates must be provided in yyyy-mm-dd format!** \
-**For pregnant women: child due date goes in the child birth date column.** \
-**Optional columns: demographic variables of interest, as a factor(e.g. Group 1, Group 2).** \
+Note: all dates must be provided in yyyy-mm-dd format! \
+For pregnant women: child due date goes in the child birth date column. \
+Optional columns: demographic variables of interest, as a factor(e.g. Group 1, Group 2).
 #### 3) Upload your data (csv file).
 ### Using the App
 #### 1) Cohort Selection
