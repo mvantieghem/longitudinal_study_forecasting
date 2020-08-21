@@ -39,7 +39,7 @@ if (!interactive()) {
 
 # USER INTERFACE -----------------------------------------------------
 ui <- fluidPage(
-    titlePanel("Longitudinal Study Forecasting Tool"), 
+    titlePanel("Longitudinal Study Planning Tool"), 
 
     sidebarLayout( # Sidebar panel for inputs ----
       sidebarPanel(
@@ -81,17 +81,17 @@ ui <- fluidPage(
                                value = default_visit_ages[2], min = 0,  max = visit_age_max),
           numericInput(inputId = "Visit3_age",
                                label = "child age of Visit 3 (weeks)",
-                               value =default_visit_ages[3], min = 0,  max = visit_age_max),
+                               value = default_visit_ages[3], min = 0,  max = visit_age_max),
         numericInput(inputId = "Visit4_age", 
                      label = "child age of Visit 4 (weeks)",
-                     value = default_visit_ages[4], min = 0, max = visit_age_max),
+                     value = default_visit_ages[4], min = 0, max = visit_age_max)
         ),
 
   # Main panel for displaying outputs ----
    mainPanel(
       # To make panel with tabs
       tabsetPanel(type = "tabs",
-                  tabPanel("Instructions", 
+                  tabPanel(h3("Instructions"), 
                         fluidRow(
                            br(),
                            h4('Getting Started'), 
@@ -119,7 +119,7 @@ ui <- fluidPage(
                         fluidRow(
                           HTML("<h5> For questions, contact the author: <a href= 'https://mvantieghem.github.io/'> Michelle VanTieghem</a>"),
                           HTML("<h5> For code, see the <a href = 'https://www.github.com/mvantieghem/longitudinal_study_forecasting/'> Github repository</a>"))),
-                  tabPanel("Study Overview",
+                  tabPanel(h3("Study Overview"),
                            fluidRow(
                              br(),
                              br()
@@ -159,7 +159,7 @@ ui <- fluidPage(
                               plotOutput(outputId = "plot_weekly_visits")
                               )
                           ), 
-                  tabPanel("Visit Schedules", 
+                  tabPanel(h3("Visit Schedules"), 
                            fluidRow(
                              br(),
                              h4("Select visit type and schedule"),
