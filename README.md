@@ -1,4 +1,4 @@
-## Longitudinal Study Forecasting Tool 
+## Longitudinal Study Scheduling Tool 
 
 Interactive tool for developmental researchers to improve longitudinal study design and implementation. \
 shiny app: https://mvantieghem.shinyapps.io/longitudinal_study_forecasting/ \
